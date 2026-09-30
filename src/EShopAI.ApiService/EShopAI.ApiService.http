@@ -1,6 +1,36 @@
 @ApiService_HostAddress = http://localhost:5314
 
-GET {{ApiService_HostAddress}}/weatherforecast/
+### Get all products
+GET {{ApiService_HostAddress}}/api/products
 Accept: application/json
+
+### Get product by ID
+GET {{ApiService_HostAddress}}/api/products/1
+Accept: application/json
+
+### Create a new product
+POST {{ApiService_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Webcam Full HD",
+  "description": "1080p webcam with built-in microphone",
+  "price": 59.99,
+  "imageUrl": "https://example.com/images/webcam.jpg"
+}
+
+### Update product
+PUT {{ApiService_HostAddress}}/api/products/1
+Content-Type: application/json
+
+{
+  "name": "Wireless Mouse Pro",
+  "description": "Ergonomic wireless mouse with silent clicks",
+  "price": 29.99,
+  "imageUrl": "https://example.com/images/mouse-pro.jpg"
+}
+
+### Delete product
+DELETE {{ApiService_HostAddress}}/api/products/5
 
 ###
