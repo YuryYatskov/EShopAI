@@ -33,4 +33,43 @@ Content-Type: application/json
 ### Delete product
 DELETE {{ApiService_HostAddress}}/api/products/5
 
+### Get all orders
+GET {{ApiService_HostAddress}}/api/orders
+Accept: application/json
+
+### Get order by ID
+GET {{ApiService_HostAddress}}/api/orders/1
+Accept: application/json
+
+### Create a new order
+POST {{ApiService_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "customerName": "Petro Shevchenko",
+  "customerEmail": "petro.shevchenko@example.com",
+  "status": "Pending",
+  "items": [
+    { "productId": 2, "productName": "Mechanical Keyboard", "quantity": 1, "unitPrice": 79.90 },
+    { "productId": 5, "productName": "Noise-Cancelling Headphones", "quantity": 1, "unitPrice": 149.00 }
+  ]
+}
+
+### Update order
+PUT {{ApiService_HostAddress}}/api/orders/2
+Content-Type: application/json
+
+{
+  "customerName": "Olena Kovalenko",
+  "customerEmail": "olena.kovalenko@example.com",
+  "orderDate": "2025-02-03T14:05:00Z",
+  "status": "Shipped",
+  "items": [
+    { "productId": 3, "productName": "27\" 4K Monitor", "quantity": 1, "unitPrice": 329.00 }
+  ]
+}
+
+### Delete order
+DELETE {{ApiService_HostAddress}}/api/orders/2
+
 ###
