@@ -5,7 +5,7 @@
 
 ## Build & run
 - Збирання: `dotnet build src\EShopAI.sln` (або `dotnet build` у папці окремого проєкту).
-- Запуск усього: `aspire run` (використовує `src\aspire.config.json`, що вказує на AppHost) або `dotnet run --project src\EShopAI.AppHost`.
+- Запуск усього: `aspire run` із папки `src` — основний спосіб запуску розподіленого застосунку. Команда читає `src\aspire.config.json` (вказує на AppHost), запускає всі ресурси (`apiservice`, `webfrontend`) та відкриває панель Aspire Dashboard (логи, трасування, метрики, стан перевірок працездатності). Альтернатива: `dotnet run --project src\EShopAI.AppHost`. Запуск окремого проєкту в обхід AppHost не має виявлення служб і порядку `.WaitFor`.
 - Запуск лише API: `dotnet run --project src\EShopAI.ApiService`. Перевірте кінцеві точки через `src\EShopAI.ApiService\EShopAI.ApiService.http` (змінна хоста `@ApiService_HostAddress`).
 
 ## Architecture
@@ -21,3 +21,12 @@
 - При додаванні кінцевої точки додавайте відповідні приклади запитів до файлу `EShopAI.ApiService.http`.
 - Запланована доменна область (згідно з README): товари (Products), кошик (Shopping Cart), замовлення (Orders) — кожен із повною підтримкою CRUD-операцій.
 - `prompts.txt` — це журнал запитів (промптів), використаних для створення проєкту; цей файл не є частиною програмного коду.
+
+## Aspire
+- Кожен проєкт-служба повинен викликати `builder.AddServiceDefaults()` до решти налаштувань і `app.MapDefaultEndpoints()` після мапінгу власних кінцевих точок: це підключає OpenTelemetry, перевірки `/health` та `/alive`, виявлення служб і стійкість HTTP-клієнтів. Не дублюйте цю конфігурацію в окремих проєктах.
+- Нові служби додаються в `AppHost.cs` через `builder.AddProject<Projects.EShopAI_*>("name")` із `.WithHttpHealthCheck("/health")`; споживачі підключаються через `.WithReference(...)` і `.WaitFor(...)`.
+
+## Best practices & style
+- Цільова платформа — `net10.0` із увімкненими `ImplicitUsings` і `Nullable`; використовуйте сучасний C# (основні конструктори, вирази колекцій `[]` / `[.. items]`, шаблони `is { }`, простори імен із файловою областю видимості).
+- Стандарт структури Minimal API: `Program.cs` лише налаштовує DI/middleware і викликає `Map<Feature>Endpoints()`; кінцеві точки живуть у статичних класах-розширеннях, що повертають `IEndpointRouteBuilder` і групуються через `MapGroup` (префікс маршруту, `WithTags`); обробники повертають `TypedResults` та об'єднання `Results<...>`, щоб метадані OpenAPI виводилися автоматично.
+- Колекції ініціалізуйте виразами колекцій (наприклад, початковий `List<Product>` у `ProductService`), а не `new List<T> { ... }`.
