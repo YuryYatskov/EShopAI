@@ -1,0 +1,77 @@
+@page "/products"
+@rendermode InteractiveServer
+@using EShopAI.Web.Models
+@using EShopAI.Web.Services
+@inject ApiClient Api
+@inject CartState State
+
+<PageTitle>Products</PageTitle>
+
+<h1>Товари</h1>
+
+<div class="mb-3">
+    <label class="form-label">Ваш email</label>
+    <input class="form-control" type="email" @bind="_email" @bind:after="OnEmailChanged" />
+</div>
+
+@if (_message is not null)
+{
+    <div class="alert alert-info">@_message</div>
+}
+
+@if (_products is null)
+{
+    <p>Завантаження...</p>
+}
+else
+{
+    <table class="table">
+        <thead><tr><th>Назва</th><th>Опис</th><th>Ціна</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var p in _products)
+        {
+            <tr>
+                <td>@p.Name</td>
+                <td>@p.Description</td>
+                <td>@p.Price.ToString("C")</td>
+                <td><button class="btn btn-primary" @onclick="() => AddAsync(p)">Додати в кошик</button></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Product>? _products;
+    private string _email = string.Empty;
+    private string? _message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _email = State.Email;
+        _products = await Api.GetProductsAsync();
+    }
+
+    private void OnEmailChanged() => State.SetEmail(_email);
+
+    private async Task AddAsync(Product product)
+    {
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            _message = "Вкажіть email.";
+            return;
+        }
+
+        State.SetEmail(_email);
+        try
+        {
+            var cart = await Api.AddToCartAsync(State.Email, product.Id);
+            State.SetItemCount(cart.Items.Sum(i => i.Quantity));
+            _message = $"«{product.Name}» додано в кошик.";
+        }
+        catch (HttpRequestException)
+        {
+            _message = "Не вдалося додати товар у кошик.";
+        }
+    }
+}

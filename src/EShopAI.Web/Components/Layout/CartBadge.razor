@@ -1,0 +1,13 @@
+@rendermode InteractiveServer
+@implements IDisposable
+@inject EShopAI.Web.Services.CartState State
+
+<span>Кошик (@State.ItemCount)</span>
+
+@code {
+    protected override void OnInitialized() => State.OnChange += OnStateChanged;
+
+    private void OnStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => State.OnChange -= OnStateChanged;
+}

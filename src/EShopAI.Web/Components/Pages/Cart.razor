@@ -1,0 +1,125 @@
+@page "/cart"
+@rendermode InteractiveServer
+@using EShopAI.Web.Models
+@using EShopAI.Web.Services
+@inject ApiClient Api
+@inject CartState State
+
+<PageTitle>Кошик</PageTitle>
+
+<h1>Кошик</h1>
+
+<div class="mb-3">
+    <label class="form-label">Email</label>
+    <div class="input-group">
+        <input class="form-control" type="email" @bind="_email" />
+        <button class="btn btn-secondary" @onclick="LoadAsync">Показати</button>
+    </div>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@if (_orderId is not null)
+{
+    <div class="alert alert-success">Замовлення №@_orderId створено. Кошик очищено.</div>
+}
+
+@if (_cart is { Items.Count: > 0 })
+{
+    <table class="table">
+        <thead><tr><th>Товар</th><th>Ціна</th><th>Кількість</th><th>Сума</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var item in _cart.Items)
+        {
+            <tr>
+                <td>@item.ProductName</td>
+                <td>@item.UnitPrice.ToString("C")</td>
+                <td>@item.Quantity</td>
+                <td>@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+                <td><button class="btn btn-danger btn-sm" @onclick="() => RemoveAsync(item.ProductId)">Видалити</button></td>
+            </tr>
+        }
+        </tbody>
+        <tfoot><tr><th colspan="3">Разом</th><th colspan="2">@_cart.TotalAmount.ToString("C")</th></tr></tfoot>
+    </table>
+
+    <div class="mb-3">
+        <label class="form-label">Ім'я клієнта</label>
+        <input class="form-control" @bind="_name" />
+    </div>
+    <button class="btn btn-success" disabled="@string.IsNullOrWhiteSpace(_name)" @onclick="CheckoutAsync">Оформити замовлення</button>
+}
+else
+{
+    <p>Кошик порожній.</p>
+}
+
+@code {
+    private ShoppingCart? _cart;
+    private string _email = string.Empty;
+    private string _name = string.Empty;
+    private int? _orderId;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _email = State.Email;
+        if (!string.IsNullOrWhiteSpace(_email))
+        {
+            await LoadAsync();
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            return;
+        }
+
+        State.SetEmail(_email);
+        try
+        {
+            _cart = await Api.GetCartAsync(State.Email);
+            State.SetItemCount(_cart.Items.Sum(i => i.Quantity));
+            _error = null;
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Не вдалося завантажити кошик.";
+        }
+    }
+
+    private async Task RemoveAsync(int productId)
+    {
+        try
+        {
+            await Api.RemoveFromCartAsync(State.Email, productId);
+        }
+        catch (HttpRequestException)
+        {
+            // Товар уже видалено або сервіс недоступний; оновлюємо вигляд нижче.
+        }
+
+        _orderId = null;
+        await LoadAsync();
+    }
+
+    private async Task CheckoutAsync()
+    {
+        try
+        {
+            var order = await Api.CheckoutAsync(State.Email, _name);
+            await LoadAsync();
+            _orderId = order.Id;
+        }
+        catch (HttpRequestException)
+        {
+            await LoadAsync();
+            _error = "Не вдалося оформити замовлення (кошик порожній або сервіс недоступний).";
+        }
+    }
+}

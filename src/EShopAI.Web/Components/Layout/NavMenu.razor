@@ -1,4 +1,4 @@
-﻿<script type="module" src="@Assets["Components/Layout/NavMenu.razor.js"]"></script>
+<script type="module" src="@Assets["Components/Layout/NavMenu.razor.js"]"></script>
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -13,6 +13,16 @@
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="products">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Товари
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="cart">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> <CartBadge />
             </NavLink>
         </div>
     </nav>

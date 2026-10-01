@@ -1,5 +1,6 @@
 using EShopAI.Web;
 using EShopAI.Web.Components;
+using EShopAI.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddOutputCache();
+
+builder.Services.AddScoped<CartState>();
+builder.Services.AddHttpClient<ApiClient>(client => client.BaseAddress = new("https+http://apiservice"));
 
 var app = builder.Build();
 

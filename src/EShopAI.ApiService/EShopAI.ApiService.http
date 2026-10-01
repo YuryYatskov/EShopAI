@@ -72,4 +72,26 @@ Content-Type: application/json
 ### Delete order
 DELETE {{ApiService_HostAddress}}/api/orders/2
 
+### Get cart
+GET {{ApiService_HostAddress}}/api/carts/ivan@example.com
+Accept: application/json
+
+### Add item to cart
+POST {{ApiService_HostAddress}}/api/carts/ivan@example.com/items
+Content-Type: application/json
+
+{ "productId": 1, "quantity": 2 }
+
+### Remove item from cart
+DELETE {{ApiService_HostAddress}}/api/carts/ivan@example.com/items/1
+
+### Clear cart
+DELETE {{ApiService_HostAddress}}/api/carts/ivan@example.com
+
+### Checkout
+POST {{ApiService_HostAddress}}/api/carts/ivan@example.com/checkout
+Content-Type: application/json
+
+{ "customerName": "Ivan Petrenko" }
+
 ###
