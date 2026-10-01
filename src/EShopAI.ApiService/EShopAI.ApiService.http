@@ -142,4 +142,134 @@ Content-Type: application/json
 
 { "customerName": "Ivan Petrenko" }
 
+##############################################################################
+### E2E: кошик -> додавання товару -> оформлення замовлення
+### Виконуйте запити послідовно (зверху вниз). Кошик створюється неявно під
+### час першого додавання товару (окремого POST для створення кошика немає).
+### Очікування вказано в коментарях "EXPECT".
+##############################################################################
+
+@E2eEmail = oksana.bondar@example.com
+@E2eName = Оксана Бондар
+@E2eProductId = 2
+@E2eQuantity = 3
+
+### Крок 0. Знімок стану: ціна товару та кількість замовлень до початку
+# @name e2eProduct
+GET {{ApiService_HostAddress}}/api/products/{{E2eProductId}}
+Accept: application/json
+
+# EXPECT: 200 OK; поле price - ціна, що буде зафіксована в кошику
+
+###
+# @name e2eOrdersBefore
+GET {{ApiService_HostAddress}}/api/orders
+Accept: application/json
+
+### Крок 0.1. Гарантуємо чистий початок: очищення кошика
+# EXPECT: 204 No Content (операція ідемпотентна)
+DELETE {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}
+
+### Крок 1. Створення кошика: початковий кошик порожній
+# @name e2eCartEmpty
+GET {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}
+Accept: application/json
+
+# EXPECT: 200 OK; customerEmail == E2eEmail; items == []; totalAmount == 0
+
+### Крок 1.1. Негативний сценарій: оформлення порожнього кошика
+# EXPECT: 400 Bad Request; тіло "Cart is empty."; замовлення НЕ створюється
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/checkout
+Content-Type: application/json
+
+{ "customerName": "{{E2eName}}" }
+
+### Крок 2. Негативні сценарії додавання товару
+# EXPECT: 404 Not Found (товару не існує)
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/items
+Content-Type: application/json
+
+{ "productId": 99999, "quantity": 1 }
+
+###
+# EXPECT: 400 Bad Request; "Quantity must be greater than zero."
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/items
+Content-Type: application/json
+
+{ "productId": {{E2eProductId}}, "quantity": 0 }
+
+### Крок 2.1. Додавання товару до кошика (створює кошик)
+# @name e2eAddItem
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/items
+Content-Type: application/json
+
+{ "productId": {{E2eProductId}}, "quantity": {{E2eQuantity}} }
+
+# EXPECT: 200 OK
+#   customerEmail == E2eEmail
+#   items.length == 1
+#   items[0].productId == E2eProductId; items[0].quantity == 3
+#   items[0].unitPrice == e2eProduct.price
+#   totalAmount == unitPrice * 3
+
+### Крок 2.2. Перевірка, що кошик зберіг товар
+# @name e2eCartFilled
+GET {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}
+Accept: application/json
+
+# EXPECT: 200 OK; те саме тіло, що й у кроці 2.1
+# Перевірка у відповіді: {{e2eCartFilled.response.body.$.totalAmount}} == {{e2eAddItem.response.body.$.totalAmount}}
+
+### Крок 3. Оформлення замовлення
+# @name e2eCheckout
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/checkout
+Content-Type: application/json
+
+{ "customerName": "{{E2eName}}" }
+
+# EXPECT: 201 Created; заголовок Location == /api/orders/{id}
+#   id > 2 (початкові дані мають id 1 і 2); status == "Pending"
+#   customerName == E2eName; customerEmail == E2eEmail
+#   orderDate - поточний UTC
+#   items == [{ productId: 2, quantity: 3, unitPrice: <ціна з кошика> }]
+#   totalAmount == totalAmount кошика з кроку 2.2
+
+### Крок 3.1. Перевірка: кошик очищено після оформлення
+# @name e2eCartAfter
+GET {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}
+Accept: application/json
+
+# EXPECT: 200 OK; items == []; totalAmount == 0
+
+### Крок 3.2. Перевірка: замовлення створено і доступне за ID
+# @name e2eOrder
+GET {{ApiService_HostAddress}}/api/orders/{{e2eCheckout.response.body.$.id}}
+Accept: application/json
+
+# EXPECT: 200 OK; тіло ідентичне відповіді оформлення (id, items, totalAmount, status "Pending")
+
+### Крок 3.3. Перевірка: замовлення з'явилося у загальному списку
+# @name e2eOrdersAfter
+GET {{ApiService_HostAddress}}/api/orders
+Accept: application/json
+
+# EXPECT: 200 OK; кількість елементів на 1 більша, ніж у e2eOrdersBefore;
+#   серед них є запис з id == e2eCheckout.id та customerEmail == E2eEmail
+
+### Крок 3.4. Негативний сценарій: повторне оформлення не створює дубліката
+# EXPECT: 400 Bad Request; "Cart is empty." (кошик уже очищено)
+POST {{ApiService_HostAddress}}/api/carts/{{E2eEmail}}/checkout
+Content-Type: application/json
+
+{ "customerName": "{{E2eName}}" }
+
+### Очищення (teardown): видалення тестового замовлення
+# EXPECT: 204 No Content
+DELETE {{ApiService_HostAddress}}/api/orders/{{e2eCheckout.response.body.$.id}}
+
+### Перевірка очищення
+# EXPECT: 404 Not Found
+GET {{ApiService_HostAddress}}/api/orders/{{e2eCheckout.response.body.$.id}}
+Accept: application/json
+
 ###
