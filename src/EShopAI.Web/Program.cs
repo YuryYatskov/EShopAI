@@ -15,6 +15,7 @@ builder.Services.AddOutputCache();
 
 builder.Services.AddScoped<CartState>();
 builder.Services.AddHttpClient<ApiClient>(client => client.BaseAddress = new("https+http://apiservice"));
+builder.Services.AddHttpClient<CustomerApiClient>(client => client.BaseAddress = new("https+http://apiservice"));
 
 var app = builder.Build();
 

@@ -32,6 +32,25 @@ public class Order
     public decimal TotalAmount { get; set; }
 }
 
+public class Customer
+{
+    public Guid Id { get; set; }
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public Address Address { get; set; } = new();
+}
+
+public class Address
+{
+    public string Street { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string PostalCode { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+}
+
 public record AddCartItemRequest(int ProductId, int Quantity = 1);
 
 public record CheckoutRequest(string CustomerName);

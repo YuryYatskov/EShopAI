@@ -1,4 +1,5 @@
 @ApiService_HostAddress = http://localhost:5314
+@CustomerId = 11111111-1111-1111-1111-111111111111
 
 ### Get all products
 GET {{ApiService_HostAddress}}/api/products
@@ -32,6 +33,53 @@ Content-Type: application/json
 
 ### Delete product
 DELETE {{ApiService_HostAddress}}/api/products/5
+
+### Get all customers
+GET {{ApiService_HostAddress}}/api/customers
+Accept: application/json
+
+### Get customer by ID
+GET {{ApiService_HostAddress}}/api/customers/{{CustomerId}}
+Accept: application/json
+
+### Create a new customer
+POST {{ApiService_HostAddress}}/api/customers
+Content-Type: application/json
+
+{
+  "firstName": "Iryna",
+  "lastName": "Melnyk",
+  "email": "iryna.melnyk@example.com",
+  "phoneNumber": "+380671234567",
+  "address": {
+    "street": "Khreshchatyk St, 1",
+    "city": "Kyiv",
+    "region": "Kyiv",
+    "postalCode": "01001",
+    "country": "Ukraine"
+  }
+}
+
+### Update customer
+PUT {{ApiService_HostAddress}}/api/customers/{{CustomerId}}
+Content-Type: application/json
+
+{
+  "firstName": "Iryna",
+  "lastName": "Melnyk",
+  "email": "iryna.melnyk@example.com",
+  "phoneNumber": "+380671234568",
+  "address": {
+    "street": "Svobody Ave, 10",
+    "city": "Lviv",
+    "region": "Lviv",
+    "postalCode": "79000",
+    "country": "Ukraine"
+  }
+}
+
+### Delete customer
+DELETE {{ApiService_HostAddress}}/api/customers/{{CustomerId}}
 
 ### Get all orders
 GET {{ApiService_HostAddress}}/api/orders

@@ -1,0 +1,170 @@
+@page "/customers"
+@rendermode InteractiveServer
+@using EShopAI.Web.Models
+@using EShopAI.Web.Services
+@inject CustomerApiClient ApiClient
+
+<PageTitle>Customers</PageTitle>
+
+<h1>Клієнти</h1>
+
+@if (_message is not null)
+{
+    <div class="alert alert-info">@_message</div>
+}
+
+@if (_items == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Ім'я</th>
+                <th>Прізвище</th>
+                <th>Email</th>
+                <th>Телефон</th>
+                <th>Адреса</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in _items)
+        {
+            <tr>
+                <td>@c.FirstName</td>
+                <td>@c.LastName</td>
+                <td>@c.Email</td>
+                <td>@c.PhoneNumber</td>
+                <td>@FormatAddress(c.Address)</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" @onclick="() => Edit(c)">Редагувати</button>
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteAsync(c)">Видалити</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h3>@(_editingId is null ? "Новий клієнт" : "Редагування клієнта")</h3>
+
+<EditForm Model="_form" OnValidSubmit="SaveAsync" FormName="customerForm">
+    <div class="row g-2 mb-2">
+        <div class="col-md-3"><input class="form-control" placeholder="Ім'я" @bind="_form.FirstName" /></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Прізвище" @bind="_form.LastName" /></div>
+        <div class="col-md-3"><input class="form-control" type="email" placeholder="Email" @bind="_form.Email" /></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Телефон" @bind="_form.PhoneNumber" /></div>
+    </div>
+    <div class="row g-2 mb-2">
+        <div class="col-md-3"><input class="form-control" placeholder="Вулиця" @bind="_form.Address.Street" /></div>
+        <div class="col-md-2"><input class="form-control" placeholder="Місто" @bind="_form.Address.City" /></div>
+        <div class="col-md-2"><input class="form-control" placeholder="Область" @bind="_form.Address.Region" /></div>
+        <div class="col-md-2"><input class="form-control" placeholder="Індекс" @bind="_form.Address.PostalCode" /></div>
+        <div class="col-md-3"><input class="form-control" placeholder="Країна" @bind="_form.Address.Country" /></div>
+    </div>
+    <button class="btn btn-primary" type="submit">Зберегти</button>
+    @if (_editingId is not null)
+    {
+        <button class="btn btn-outline-secondary" type="button" @onclick="Reset">Скасувати</button>
+    }
+</EditForm>
+
+@code {
+    private Customer[]? _items;
+    private Customer _form = new();
+    private Guid? _editingId;
+    private string? _message;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _items = await ApiClient.GetAllAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _items = [];
+            _message = "Не вдалося завантажити клієнтів.";
+        }
+    }
+
+    private static string FormatAddress(Address? a) =>
+        a is null
+            ? string.Empty
+            : string.Join(", ", new[] { a.Street, a.City, a.Region, a.PostalCode, a.Country }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+
+    private void Edit(Customer customer)
+    {
+        _editingId = customer.Id;
+        _form = new Customer
+        {
+            Id = customer.Id,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            Email = customer.Email,
+            PhoneNumber = customer.PhoneNumber,
+            Address = new Address
+            {
+                Street = customer.Address?.Street ?? string.Empty,
+                City = customer.Address?.City ?? string.Empty,
+                Region = customer.Address?.Region ?? string.Empty,
+                PostalCode = customer.Address?.PostalCode ?? string.Empty,
+                Country = customer.Address?.Country ?? string.Empty
+            }
+        };
+    }
+
+    private void Reset()
+    {
+        _editingId = null;
+        _form = new();
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (_editingId is { } id)
+            {
+                await ApiClient.UpdateAsync(id, _form);
+            }
+            else
+            {
+                await ApiClient.CreateAsync(_form);
+            }
+
+            _message = "Клієнта збережено.";
+            Reset();
+            await LoadAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _message = "Не вдалося зберегти клієнта.";
+        }
+    }
+
+    private async Task DeleteAsync(Customer customer)
+    {
+        try
+        {
+            await ApiClient.DeleteAsync(customer.Id);
+            _message = "Клієнта видалено.";
+            if (_editingId == customer.Id)
+            {
+                Reset();
+            }
+
+            await LoadAsync();
+        }
+        catch (HttpRequestException)
+        {
+            _message = "Не вдалося видалити клієнта.";
+        }
+    }
+}
